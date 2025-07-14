@@ -309,7 +309,11 @@ class FlattenApp(tk.Tk):
         ttk.Button(frm, text="参照", command=self.select_dst).grid(row=1, column=2)
 
         # --- 画像表示エリア（実行ボタン左側） ---
-        image_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "image")
+        # PyInstallerバイナリ対応: _MEIPASSがあればそこを参照
+        if hasattr(sys, '_MEIPASS'):
+            image_dir = os.path.join(sys._MEIPASS, "flatten_app", "image")
+        else:
+            image_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "image")
         self._image_files = []
         for i in range(1, 5):
             p = os.path.join(image_dir, f"nanote_0{i}.png")
