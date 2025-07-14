@@ -25,7 +25,7 @@ class DirectoryScanner:
     def scan(self) -> List[Dict]:
         """
         ディレクトリ配下の全ファイル・フォルダ情報をリストで返す
-        各要素: {'relpath': str, 'is_dir': bool, 'name': str}
+        各要素: {'relpath': str, 'is_dir': bool, 'name': str, 'ext': str, 'size': int}
         """
         result = []
         for dirpath, dirnames, filenames in os.walk(self.root):
@@ -38,7 +38,12 @@ class DirectoryScanner:
                 if self.is_excluded(fname):
                     continue
                 rel_file = os.path.normpath(os.path.join(rel_dir, fname)) if rel_dir != '.' else fname
-                result.append({'relpath': rel_file, 'is_dir': False, 'name': fname})
+                ext = os.path.splitext(fname)[1].lower()
+                try:
+                    size = os.path.getsize(os.path.join(dirpath, fname))
+                except Exception:
+                    size = -1
+                result.append({'relpath': rel_file, 'is_dir': False, 'name': fname, 'ext': ext, 'size': size})
         return result
 
 def flatten_filename(relpath: str) -> str:
