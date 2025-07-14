@@ -1,3 +1,24 @@
+
+
+
+# --- import時点でファイル書き出し（importされたことを確実に検知） ---
+try:
+    with open(r"C:\\vscode\\BJB-FilePathFlatter\\debug_import_marker.txt", "w", encoding="utf-8") as f:
+        import datetime
+        f.write(f"[import] __file__ = {__file__}\n")
+        f.write(f"datetime = {datetime.datetime.now()}\n")
+except Exception as e:
+    pass
+
+
+# --- import時に必ずファイル書き出し（import経路デバッグ） ---
+try:
+    with open(r"C:\\vscode\\BJB-FilePathFlatter\\debug_import_marker.txt", "w", encoding="utf-8") as f:
+        import datetime
+        f.write(f"imported: {__file__}\n{datetime.datetime.now()}\n")
+except Exception:
+    pass
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import threading
@@ -5,8 +26,26 @@ import os
 import shutil
 import json
 import urllib.parse
-from .flattener.logic import DirectoryScanner, flatten_filename
-from .flattener.filemap import FileMap
+# Pillowで画像表示
+from PIL import Image, ImageTk
+import random
+
+# --- どの実行形態でも動作するimport構文に統一 ---
+import sys
+import pathlib
+_here = pathlib.Path(__file__).resolve().parent
+_root = _here.parent
+if str(_root) not in sys.path:
+    sys.path.insert(0, str(_root))
+if str(_here) not in sys.path:
+    sys.path.insert(0, str(_here))
+# --- import fallback: flatten_app.flattener → flattener ---
+try:
+    from flatten_app.flattener.logic import DirectoryScanner, flatten_filename
+    from flatten_app.flattener.filemap import FileMap
+except ImportError:
+    from flattener.logic import DirectoryScanner, flatten_filename
+    from flattener.filemap import FileMap
 
 class FlattenApp(tk.Tk):
     def show_help(self):
@@ -32,7 +71,14 @@ class FlattenApp(tk.Tk):
             "- 詳細仕様・CLI・多言語対応などはREADME.md参照\n"
         )
         messagebox.showinfo("ヘルプ", help_text)
+
     def __init__(self):
+        # --- 実際に使われているファイルパスをファイルに書き出す ---
+        try:
+            with open(r"C:\\vscode\\BJB-FilePathFlatter\\debug_gui_path.txt", "w", encoding="utf-8") as f:
+                f.write(f"__file__ = {__file__}\n")
+        except Exception as e:
+            pass
         super().__init__()
         self.title("ファイルフラット化・復元ツール")
         self.geometry("800x600")
@@ -53,96 +99,26 @@ class FlattenApp(tk.Tk):
             size /= 1024.0
         return f"{size:,.0f} PB"
 
-    def create_widgets(self):
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure('TButton', font=('Meiryo UI', 10), padding=6)
-        style.configure('TLabel', font=('Meiryo UI', 10))
-        style.configure('Treeview.Heading', font=('Meiryo UI', 10, 'bold'))
-        style.configure('TEntry', font=('Meiryo UI', 10))
-
-        # モード切替＋ヘルプボタン
-        self.mode_var = tk.StringVar(value='flatten')
-        mode_frame = ttk.Frame(self)
-        mode_frame.pack(fill=tk.X, padx=10, pady=(10, 0))
-        ttk.Label(mode_frame, text='動作モード:').pack(side=tk.LEFT)
-        ttk.Radiobutton(mode_frame, text='フラット化', variable=self.mode_var, value='flatten', command=self.on_mode_change).pack(side=tk.LEFT, padx=5)
-        ttk.Radiobutton(mode_frame, text='復元', variable=self.mode_var, value='restore', command=self.on_mode_change).pack(side=tk.LEFT, padx=5)
-        ttk.Button(mode_frame, text='ヘルプ', command=self.show_help).pack(side=tk.RIGHT, padx=5)
-
-        frm = ttk.Frame(self)
-        frm.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        # 入力ディレクトリ
-        self.src_var = tk.StringVar()
-        ttk.Label(frm, text="入力フォルダ:").grid(row=0, column=0, sticky=tk.W)
-        ttk.Entry(frm, textvariable=self.src_var, width=50).grid(row=0, column=1)
-        ttk.Button(frm, text="参照", command=self.select_src).grid(row=0, column=2)
-        ttk.Button(frm, text="スキャン", command=self.scan_dir).grid(row=0, column=3)
-
-        # 出力ディレクトリ
-        self.dst_var = tk.StringVar()
-        ttk.Label(frm, text="出力フォルダ:").grid(row=1, column=0, sticky=tk.W)
-        ttk.Entry(frm, textvariable=self.dst_var, width=50).grid(row=1, column=1)
-        ttk.Button(frm, text="参照", command=self.select_dst).grid(row=1, column=2)
-
-        # メイン表示領域（ツリー/復元リスト切替用）
-        self.main_area = ttk.Frame(frm)
-        self.main_area.grid(row=2, column=0, columnspan=4, sticky="nsew", pady=10)
-        frm.rowconfigure(2, weight=1)
-        frm.columnconfigure(1, weight=1)
-
-        # ツリービュー（ZIP化・除外指定）＋スクロールバー
-        tree_frame = ttk.Frame(self.main_area)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        self.tree_scrollbar = ttk.Scrollbar(tree_frame, orient="vertical")
-        self.tree = ttk.Treeview(tree_frame, columns=("type", "relpath", "ext", "size", "count", "exclude"), selectmode="none", height=15, yscrollcommand=self.tree_scrollbar.set)
-        self.tree_scrollbar.config(command=self.tree.yview)
-        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.tree_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.tree.heading("#0", text="名前")
-        self.tree.heading("type", text="種別")
-        self.tree.heading("relpath", text="相対パス")
-        self.tree.heading("ext", text="拡張子")
-        self.tree.heading("size", text="サイズ")
-        self.tree.heading("count", text="ZIP化")
-        self.tree.heading("exclude", text="除外")
-        self.tree.column("type", width=60, anchor="center")
-        self.tree.column("relpath", width=200)
-        self.tree.column("ext", width=60, anchor="center")
-        self.tree.column("size", width=80, anchor="e")
-        self.tree.column("count", width=60, anchor="center")
-        self.tree.column("exclude", width=60, anchor="center")
-        self.tree.bind("<Button-1>", self.on_tree_click)
-        self.restore_tree = None  # 復元リストはshow_restore_uiで生成
-
-        # 実行ボタン
-        self.run_btn = ttk.Button(frm, text="フラット化実行", command=self.run_flatten)
-        self.run_btn.grid(row=3, column=1, pady=10)
-
-        # 除外・ZIP推奨指定を横並びに
-        self.exclude_ext_var = tk.StringVar()
-        default_ex = "Thumbs.db\n.DS_Store\n.tmp\n.swp\n~$\ndesktop.ini"
-        self.exclude_ext_var.set(default_ex)
-        self.target_ext_var = tk.StringVar()
-        default_target_ex = ".ico\n.pdf\n.ASW"
-        self.target_ext_var.set(default_target_ex)
-        ex_zip_frame = ttk.Frame(frm)
-        ex_zip_frame.grid(row=3, column=2, columnspan=2, sticky=tk.W+tk.E)
-        # 除外
-        exclude_frame = ttk.Frame(ex_zip_frame)
-        exclude_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
-        ttk.Label(exclude_frame, text="除外拡張子・ファイル名(1行1つ):").pack(anchor=tk.W)
-        self.exclude_ext_text = tk.Text(exclude_frame, height=4, width=22, font=('Meiryo UI', 10))
-        self.exclude_ext_text.pack(fill=tk.X)
-        self.exclude_ext_text.insert('1.0', default_ex)
-        # ZIP推奨
-        zip_frame = ttk.Frame(ex_zip_frame)
-        zip_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        ttk.Label(zip_frame, text="ZIP推奨拡張子(1行1つ):").pack(anchor=tk.W)
-        self.target_ext_text = tk.Text(zip_frame, height=4, width=22, font=('Meiryo UI', 10))
-        self.target_ext_text.pack(fill=tk.X)
-        self.target_ext_text.insert('1.0', default_target_ex)
+    def show_random_image(self):
+        import tkinter.messagebox as mb
+        if not self._image_files:
+            self._image_label.config(image="", text="画像なし")
+            mb.showerror("画像エラー", "画像ファイルリストが空です。imageフォルダに画像が存在するか確認してください。")
+            return
+        img_path = random.choice(self._image_files)
+        print(f"[DEBUG] show_random_image: 選択画像: {img_path}")
+        try:
+            img = Image.open(img_path)
+            max_w, max_h = 120, 120
+            img.thumbnail((max_w, max_h), Image.LANCZOS)
+            self._image_tk = ImageTk.PhotoImage(img)
+            # ファイル名もtextで表示
+            self._image_label.config(image=self._image_tk, text="")
+            self._image_label.image = self._image_tk  # 明示的に参照保持
+            print(f"[DEBUG] show_random_image: 画像ラベルにセット完了")
+        except Exception as e:
+            self._image_label.config(image="", text=f"画像読込失敗\n{os.path.basename(img_path)}")
+            mb.showerror("画像読込失敗", f"画像読込失敗: {img_path}\n{e}")
     def show_restore_ui(self, frm):
         # メイン表示領域を復元リストに切り替え
         for widget in self.main_area.winfo_children():
@@ -293,6 +269,7 @@ class FlattenApp(tk.Tk):
         self.on_mode_change()
 
     def create_widgets(self):
+        import tkinter.messagebox as mb
         style = ttk.Style()
         style.theme_use('clam')
         style.configure('TButton', font=('Meiryo UI', 10), padding=6)
@@ -330,6 +307,28 @@ class FlattenApp(tk.Tk):
         ttk.Label(frm, text="出力フォルダ:").grid(row=1, column=0, sticky=tk.W)
         ttk.Entry(frm, textvariable=self.dst_var, width=50).grid(row=1, column=1)
         ttk.Button(frm, text="参照", command=self.select_dst).grid(row=1, column=2)
+
+        # --- 画像表示エリア（実行ボタン左側） ---
+        image_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "image")
+        self._image_files = []
+        for i in range(1, 5):
+            p = os.path.join(image_dir, f"nanote_0{i}.png")
+            if os.path.isfile(p):
+                self._image_files.append(p)
+        self._image_label = tk.Label(frm, bg="white", borderwidth=0, highlightthickness=0, width=120, height=120, anchor="center", text="") 
+        self._image_label.grid(row=3, column=0, rowspan=2, sticky=tk.N, padx=(0, 10), pady=5)
+        self._image_tk = None  # 参照保持
+        print(f"[DEBUG] image_dir: {image_dir}")
+        print(f"[DEBUG] _image_files: {self._image_files}")
+        if not self._image_files:
+            self._image_label.config(text="画像なし")
+            mb.showerror("画像エラー", f"画像ファイルが見つかりませんでした\n{image_dir}\nに nanote_01.png〜nanote_04.png を配置してください。")
+        else:
+            try:
+                self.show_random_image()
+            except Exception as e:
+                self._image_label.config(text="画像表示エラー")
+                mb.showerror("画像表示エラー", f"画像表示処理で例外発生:\n{e}")
 
         # メイン表示領域（ツリー/復元リスト切替用）
         self.main_area = ttk.Frame(frm)
@@ -373,7 +372,6 @@ class FlattenApp(tk.Tk):
         # 実行ボタン
         self.run_btn = ttk.Button(frm, text="フラット化実行", command=self.run_flatten)
         self.run_btn.grid(row=3, column=1, pady=10)
-
 
         # 除外・ZIP推奨拡張子指定を横並びに
         self.exclude_ext_var = tk.StringVar()
@@ -675,6 +673,17 @@ class FlattenApp(tk.Tk):
             count = 0
             filemap = []
             # --- ZIP化対象のディレクトリを先にZIP化 ---
+            zip_count = 0
+            zip_total = len(zip_targets)
+            zip_spinner_seq = ['|', '/', '-', '\\']
+            zip_spinner_idx = 0
+            def spin_update(zc, zt, idx):
+                spin = zip_spinner_seq[idx % len(zip_spinner_seq)]
+                remain_count = self._flatten_progress['total_count'] - self._flatten_progress['done_count']
+                remain_size = self._flatten_progress['total_size'] - self._flatten_progress['done_size']
+                self.progress_label.config(
+                    text=f" | 残り{remain_count:,}件, 処理済{self._flatten_progress['done_count']:,}件, 残り{self.human_readable_size(remain_size)} / {self.human_readable_size(self._flatten_progress['total_size'])}  (ZIP圧縮中 {zc}/{zt} {spin})"
+                )
             for relpath in sorted(zip_targets):
                 if relpath in exclude_targets:
                     self.log(f"スキップ（除外指定）: {relpath}")
@@ -682,6 +691,18 @@ class FlattenApp(tk.Tk):
                 abs_dir = os.path.join(src, relpath)
                 zip_name = flatten_filename(relpath) + ".zip"
                 zip_path = os.path.join(dst, zip_name)
+                zip_count += 1
+                # スピナーを一定時間ごとに回す
+                spinning = True
+                def spinner_loop(zc=zip_count, zt=zip_total):
+                    nonlocal zip_spinner_idx, spinning
+                    if not spinning:
+                        return
+                    zip_spinner_idx = (zip_spinner_idx + 1) % len(zip_spinner_seq)
+                    spin_update(zc, zt, zip_spinner_idx)
+                    self.progress_label.after(120, spinner_loop, zc, zt)
+                spinning = True
+                self.progress_label.after(0, spinner_loop, zip_count, zip_total)
                 try:
                     shutil.make_archive(zip_path[:-4], 'zip', abs_dir)
                     if not zip_path.endswith('.zip'):
@@ -693,6 +714,9 @@ class FlattenApp(tk.Tk):
                     })
                 except Exception as e:
                     self.log(f"ZIP化エラー: {abs_dir} : {e}")
+                spinning = False
+                # 最終状態を明示的に表示
+                spin_update(zip_count, zip_total, zip_spinner_idx)
             # --- 通常ファイルのフラット化 ---
             for item in items:
                 if not item['is_dir']:
@@ -711,7 +735,15 @@ class FlattenApp(tk.Tk):
                         self.log(f"スキップ（除外拡張子）: {item['relpath']}")
                         continue
                     src_path = os.path.join(src, item['relpath'])
-                    flat_name = flatten_filename(item['relpath'])
+                    # flatten_filename高速化: 既存のままでは遅い場合はキャッシュ利用
+                    if not hasattr(self, '_flatten_name_cache'):
+                        self._flatten_name_cache = {}
+                    relpath_key = item['relpath']
+                    if relpath_key in self._flatten_name_cache:
+                        flat_name = self._flatten_name_cache[relpath_key]
+                    else:
+                        flat_name = flatten_filename(relpath_key)
+                        self._flatten_name_cache[relpath_key] = flat_name
                     dst_path = os.path.join(dst, flat_name)
                     try:
                         os.makedirs(os.path.dirname(dst_path), exist_ok=True)
@@ -746,6 +778,21 @@ class FlattenApp(tk.Tk):
             self.run_btn.config(state=tk.NORMAL)
             if hasattr(self, 'progress_label'):
                 self.progress_label.after(0, lambda: self.progress_label.config(text=""))
+            # 完了ポップアップ＋エクスプローラーで出力先を開く
+            try:
+                import subprocess
+                messagebox.showinfo(
+                    "完了",
+                    "フラット化・ZIP化が完了しました！\n\n出力フォルダを開きます。\n\n※エクスプローラーでファイルが表示されない場合は、右クリック→最新の情報に更新 でリフレッシュしてください。"
+                )
+                if os.name == 'nt':
+                    # Windows
+                    os.startfile(dst)
+                else:
+                    # Mac/Linux
+                    subprocess.Popen(['open' if sys.platform == 'darwin' else 'xdg-open', dst])
+            except Exception as e:
+                self.log(f"エクスプローラー起動エラー: {e}")
 
     def log(self, msg):
         self.log_text.config(state=tk.NORMAL)
@@ -757,5 +804,9 @@ def main():
     app = FlattenApp()
     app.mainloop()
 
+# 直接実行時は警告のみ（正しい起動経路は main.py 経由）
 if __name__ == "__main__":
-    main()
+    import sys
+    import tkinter.messagebox as mb
+    mb.showerror("起動エラー", "このファイルを直接実行しないでください。\n必ず main.py から起動してください。\n(例: python -m flatten_app.main)")
+    sys.exit(1)
