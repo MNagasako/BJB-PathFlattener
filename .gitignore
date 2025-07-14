@@ -33,6 +33,10 @@ MANIFEST
 *.manifest
 *.spec
 
+# Debug marker files
+debug_main_entry.txt
+debug_import_marker.txt
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

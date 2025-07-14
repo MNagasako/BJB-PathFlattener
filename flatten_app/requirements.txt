@@ -1,6 +1,8 @@
 # 必須パッケージ
+Pillow
 # Tkinterは標準ライブラリのため不要
 # PyInstallerは配布時のみ
+PyInstaller
 
 # 開発・テスト用
 pytest

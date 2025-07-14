@@ -3,7 +3,7 @@
 
 # --- import時点でファイル書き出し（importされたことを確実に検知） ---
 try:
-    with open(r"C:\\vscode\\BJB-FilePathFlatter\\debug_import_marker.txt", "w", encoding="utf-8") as f:
+    with open(r"C:\\vscode\\BJB-PathFlattener\\debug_import_marker.txt", "w", encoding="utf-8") as f:
         import datetime
         f.write(f"[import] __file__ = {__file__}\n")
         f.write(f"datetime = {datetime.datetime.now()}\n")
@@ -13,7 +13,7 @@ except Exception as e:
 
 # --- import時に必ずファイル書き出し（import経路デバッグ） ---
 try:
-    with open(r"C:\\vscode\\BJB-FilePathFlatter\\debug_import_marker.txt", "w", encoding="utf-8") as f:
+    with open(r"C:\\vscode\\BJB-PathFlattener\\debug_import_marker.txt", "w", encoding="utf-8") as f:
         import datetime
         f.write(f"imported: {__file__}\n{datetime.datetime.now()}\n")
 except Exception:
@@ -75,7 +75,7 @@ class FlattenApp(tk.Tk):
     def __init__(self):
         # --- 実際に使われているファイルパスをファイルに書き出す ---
         try:
-            with open(r"C:\\vscode\\BJB-FilePathFlatter\\debug_gui_path.txt", "w", encoding="utf-8") as f:
+            with open(r"C:\\vscode\\BJB-PathFlattener\\debug_gui_path.txt", "w", encoding="utf-8") as f:
                 f.write(f"__file__ = {__file__}\n")
         except Exception as e:
             pass

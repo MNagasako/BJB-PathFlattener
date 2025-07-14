@@ -1,9 +1,11 @@
-# BJB-FilePathFlatter ドキュメント
+
+# BJB-PathFlattener ドキュメント
 
 ## 概要
 - 階層フォルダのファイルをフラット化・復元するGUIツール
 - Tkinterベース、Windows対応
 - 除外/ZIP指定、filemap記録、ZIP展開/非展開、進捗バー、ログ表示、設定保存
+- **2025-07-15: sys.path自動調整でどのディレクトリからも実行可能に（main.py修正）**
 - **2025-07-14: フラット化時のコピー処理をshutil.copy2に変更し大幅高速化**
 
 ## 主な機能
