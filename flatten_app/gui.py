@@ -1,20 +1,35 @@
 
 
 
+import sys
+import os
+import pathlib
 # --- import時点でファイル書き出し（importされたことを確実に検知） ---
 try:
-    with open(r"C:\\vscode\\BJB-PathFlattener\\debug_import_marker.txt", "w", encoding="utf-8") as f:
-        import datetime
+    # バイナリ実行時はsys._MEIPASS、通常は__file__の親
+    if hasattr(sys, '_MEIPASS'):
+        base_dir = sys._MEIPASS
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+    debug_marker_path = os.path.join(base_dir, "debug_import_marker.txt")
+    import datetime
+    os.makedirs(os.path.dirname(debug_marker_path), exist_ok=True)
+    with open(debug_marker_path, "w", encoding="utf-8") as f:
         f.write(f"[import] __file__ = {__file__}\n")
         f.write(f"datetime = {datetime.datetime.now()}\n")
 except Exception as e:
     pass
 
-
 # --- import時に必ずファイル書き出し（import経路デバッグ） ---
 try:
-    with open(r"C:\\vscode\\BJB-PathFlattener\\debug_import_marker.txt", "w", encoding="utf-8") as f:
-        import datetime
+    if hasattr(sys, '_MEIPASS'):
+        base_dir = sys._MEIPASS
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+    debug_marker_path = os.path.join(base_dir, "debug_import_marker.txt")
+    import datetime
+    os.makedirs(os.path.dirname(debug_marker_path), exist_ok=True)
+    with open(debug_marker_path, "w", encoding="utf-8") as f:
         f.write(f"imported: {__file__}\n{datetime.datetime.now()}\n")
 except Exception:
     pass
@@ -75,7 +90,13 @@ class FlattenApp(tk.Tk):
     def __init__(self):
         # --- 実際に使われているファイルパスをファイルに書き出す ---
         try:
-            with open(r"C:\\vscode\\BJB-PathFlattener\\debug_gui_path.txt", "w", encoding="utf-8") as f:
+            if hasattr(sys, '_MEIPASS'):
+                base_dir = sys._MEIPASS
+            else:
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+            debug_gui_path = os.path.join(base_dir, "debug_gui_path.txt")
+            os.makedirs(os.path.dirname(debug_gui_path), exist_ok=True)
+            with open(debug_gui_path, "w", encoding="utf-8") as f:
                 f.write(f"__file__ = {__file__}\n")
         except Exception as e:
             pass
