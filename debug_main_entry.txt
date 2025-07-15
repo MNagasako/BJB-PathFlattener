@@ -1,4 +1,0 @@
-main.py __file__ = C:\Users\Nagasako\AppData\Local\Temp\_MEI204282\main.py
-gui_mod.__file__ = C:\Users\Nagasako\AppData\Local\Temp\_MEI204282\flatten_app\gui.py
-FlattenApp = <class 'flatten_app.gui.FlattenApp'>
-datetime = 2025-07-15 12:59:01.885338
