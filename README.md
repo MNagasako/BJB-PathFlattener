@@ -30,6 +30,7 @@
 - 設定自動保存（入出力フォルダ）
 - ヘルプボタン（❓）による使い方ガイド表示
 - 復元時のfilemap優先/ファイル名推測・ZIP展開ON/OFF切替
+- **フラット名生成・復元仕様を「__（ダブルアンダースコア）区切り＋___（トリプルアンダースコア）エスケープ」方式に変更し、可読性と復元性を両立**
 
 ---
 
@@ -63,7 +64,7 @@ python main.py --cli --src <input_dir> --dst <output_dir> [--interactive]
 ---
 
 ## 出力例
-- フラット化ファイル群
+- フラット化ファイル群（例：`dir1__dir2__file.txt`、`foo___bar.txt` など）
 - ZIPファイル（任意）
 - filemap.csv または .json
 
@@ -82,9 +83,9 @@ EM_data/SampleA_高倍率/img2.tif
 EM_data/SampleA_EDS/eds1.dat
 
 [出力]
-EM_data_flat_20250714/SampleA_低倍率%2Fimg1.tif
-EM_data_flat_20250714/SampleA_高倍率%2Fimg2.tif
-EM_data_flat_20250714/SampleA_EDS.zip
+EM_data_flat_20250714/SampleA__低倍率__img1.tif
+EM_data_flat_20250714/SampleA__高倍率__img2.tif
+EM_data_flat_20250714/SampleA__EDS.zip
 EM_data_flat_20250714/filemap.csv
 ```
 
@@ -92,6 +93,27 @@ EM_data_flat_20250714/filemap.csv
 
 ## フォルダ構成
 ```
+
+---
+
+## フラット名生成・復元仕様（v0.2.4～）
+
+- パス区切りは「__」（ダブルアンダースコア）
+- 元の「__」は「___」（トリプルアンダースコア）にエスケープ
+- 元の「___」は「___UNDERSCORE___」に一時エスケープ
+- 日本語や記号はエンコードせず可読性重視
+- 復元時は逆変換（`restore_flattened_filename`）で元パスを再現
+
+例：
+
+| 元パス | フラット名 |
+|:---|:---|
+| foo/bar/baz.txt | foo__bar__baz.txt |
+| foo__bar/baz.txt | foo___bar__baz.txt |
+| foo___bar/baz.txt | foo___UNDERSCORE___bar__baz.txt |
+| データ/サンプル_01.txt | データ__サンプル_01.txt |
+
+※ エスケープ文字列・区切り文字は設定で変更可能
 flatten_app/
   main.py
   gui.py
