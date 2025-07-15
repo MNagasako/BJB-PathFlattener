@@ -91,6 +91,21 @@ flatten_app/
     logic.py
     filemap.py
   resources/
+    image/
+      nanote_01.png
+      nanote_02.png
+      nanote_03.png
+      nanote_04.png
+      CNTS.png
+      nanote_sab_01.png
+      nanote_sab_02.png
+      nanote_sab_03.png
+      spinner.gif
+      icon/
+        icon1.ico
+        icon1.png
+        icon2.ico
+        icon2.png
     icon.ico
 ```
 

@@ -311,9 +311,9 @@ class FlattenApp(tk.Tk):
         # --- 画像表示エリア（実行ボタン左側） ---
         # PyInstallerバイナリ対応: _MEIPASSがあればそこを参照
         if hasattr(sys, '_MEIPASS'):
-            image_dir = os.path.join(sys._MEIPASS, "flatten_app", "image")
+            image_dir = os.path.join(sys._MEIPASS, "flatten_app", "resources", "image")
         else:
-            image_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "image")
+            image_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "image")
         self._image_files = []
         for i in range(1, 5):
             p = os.path.join(image_dir, f"nanote_0{i}.png")
