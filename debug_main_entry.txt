@@ -1,4 +1,4 @@
-main.py __file__ = C:\vscode\BJB-PathFlattener\flatten_app\main.py
-gui_mod.__file__ = C:\vscode\BJB-PathFlattener\flatten_app\gui.py
+main.py __file__ = C:\Users\Nagasako\AppData\Local\Temp\_MEI204282\main.py
+gui_mod.__file__ = C:\Users\Nagasako\AppData\Local\Temp\_MEI204282\flatten_app\gui.py
 FlattenApp = <class 'flatten_app.gui.FlattenApp'>
-datetime = 2025-07-15 11:18:40.490179
+datetime = 2025-07-15 12:59:01.885338
