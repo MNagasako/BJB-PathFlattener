@@ -50,26 +50,26 @@
 
 ---
 
-## 使い方
 
+## 使い方（バイナリ・GUI専用）
 
-### GUIモード
-1. `python main.py` または `python -m flatten_app.gui` で起動（またはバイナリ実行/BJB-PF.exe）
-2. 「入力フォルダ」「出力フォルダ」を選択（パスは自動保存）
-3. [スキャン]ボタンでフォルダ内を解析し、ツリー表示（ZIP化/除外指定はカラムクリックでON/OFF）
-4. 右側テキスト欄で「除外拡張子」「ZIP推奨拡張子」を編集可能
-5. 「フラット化実行」ボタンで、
-   - フラット名（__区切り＋___エスケープ方式）でファイルをコピー
-   - filemap.csvも同時出力
-   - ZIP化指定フォルダは自動でZIP化
-6. [復元]モードに切り替えると、filemap優先/ファイル名推測・ZIP展開ON/OFFを選択し「復元実行」
-7. 進捗・統計・ログ・ヘルプ（❓）は画面上部/下部に常時表示
-8. ヘルプ（❓）ボタンで詳細な使い方ガイドをいつでも確認可能
+### 起動方法
+BJB-PF.exe を実行してください。
 
-### CLIモード
-```sh
-python main.py --cli --src <input_dir> --dst <output_dir> [--interactive]
-```
+### フラット化手順
+1. 「入力フォルダ」「出力フォルダ」を選択
+2. [スキャン]ボタンで内容を確認
+3. 必要に応じてZIP化/除外指定や拡張子設定を編集
+4. 「フラット化実行」ボタンでフラット化を開始
+5. 完了後、出力フォルダにフラット化ファイル・filemap.csv等が生成されます
+
+### 復元手順
+1. [復元]モードに切り替え
+2. 「入力フォルダ」（フラット化済みファイル群）と「出力フォルダ」を選択
+3. filemap優先/ファイル名推測・ZIP展開ON/OFFを選択
+4. 「復元実行」ボタンで元の階層に復元
+
+※ 詳細な使い方ガイドはアプリ内ヘルプ（❓ボタン）からも参照できます
 
 ---
 
@@ -158,12 +158,13 @@ EM_data_flat_20250714/filemap.csv
 
 例：
 
-| 元パス | フラット名 |
-|:---|:---|
-| foo/bar/baz.txt | foo__bar__baz.txt |
-| foo__bar/baz.txt | foo___bar__baz.txt |
-| foo___bar/baz.txt | foo___UNDERSCORE___bar__baz.txt |
-| データ/サンプル_01.txt | データ__サンプル_01.txt |
+| 元パス                | フラット名                       |
+|:----------------------|:---------------------------------|
+| foo/bar/baz.txt       | foo__bar__baz.txt                |
+| foo__bar/baz.txt      | foo___bar__baz.txt               |
+| foo___bar/baz.txt     | foo___UNDERSCORE___bar__baz.txt  |
+| データ/サンプル_01.txt | データ__サンプル_01.txt           |
+| dir/___/file.txt      | dir___UNDERSCORE____file.txt      |
 
 ※ エスケープ文字列・区切り文字は設定で変更可能
 flatten_app/
@@ -194,28 +195,9 @@ flatten_app/
 
 ---
 
+
 ## 開発・テスト方針
-- モジュール分割・クラスベース設計
-- 自動テスト・リファクタリング・ログ記録
-- テストログ例:
-  ```
-  [YYYY-MM-DD HH:MM:SS] TEST MODULE: test_module_name
-  RESULT: PASS | FAIL
-  SUMMARY: 概要説明
-  DETAIL:
-    - テスト内容:
-    - 入力:
-    - 出力:
-    - エラー内容（あれば）:
-  ```
-- リファクタログ例:
-  ```
-  [YYYY-MM-DD HH:MM:SS] REFACTOR MODULE: module_name
-  SUMMARY: リファクタの目的と変更点
-  BEFORE: （変更前の処理概要）
-  AFTER: （変更後の処理概要）
-  IMPACT: テスト結果や影響範囲（あれば）
-  ```
+詳細な開発方針・テスト方針・ログ記録例は `TEST_REFACTOR_LOG.md` をご参照ください。
 
 ---
 
@@ -229,28 +211,4 @@ flatten_app/
 ---
 
 ## テスト・リファクタ履歴
-```
-[2025-07-14 00:00:00] TEST MODULE: test_filemap.py
-RESULT: PASS
-SUMMARY: filemapのCSV/JSON保存・読込の自動テスト
-DETAIL:
-  - テスト内容: filemapの保存・読込
-  - 入力: filemapリスト
-  - 出力: CSV/JSONファイル、読込結果
-  - エラー内容: なし
-
-[2025-07-14 00:00:00] TEST MODULE: test_logic.py
-RESULT: PASS
-SUMMARY: ディレクトリスキャン・ファイル名変換の自動テスト
-DETAIL:
-  - テスト内容: DirectoryScanner, flatten_filename
-  - 入力: テスト用ディレクトリ・ファイル名
-  - 出力: スキャン結果・変換結果
-  - エラー内容: なし
-
-[2025-07-14 00:00:00] REFACTOR MODULE: gui.py
-SUMMARY: ツリービューによるZIP化/除外指定・filemap出力・進捗/統計/色分け・ヘルプボタン追加・UI/UX改善
-BEFORE: 単純なディレクトリ選択・コピーのみ
-AFTER: ツリービューでZIP化/除外指定・filemap.csv出力・進捗/統計/色分け・ヘルプボタン追加
-IMPACT: GUIの利便性・仕様準拠性・ユーザビリティ大幅向上
-```
+詳細なテスト・リファクタ履歴は `TEST_REFACTOR_LOG.md` をご参照ください。
